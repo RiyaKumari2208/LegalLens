@@ -1,6 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const api = require("./prisma/config/prisma");
+const api = require("./config/prisma");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -254,6 +254,45 @@ app.get("/api/cases/:id", auth, async (req, res) => {
     return res.status(200).json({
       success: true,
       case: caseData,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+app.post("/api/casetimeline", auth, async (req, res) => {
+  try {
+    const { caseId, title, description, eventDate } = req.body;
+
+    const existingCase = await api.case.findUnique({
+      where: {
+        id: caseId,
+      },
+    });
+
+    if (!existingCase) {
+      return res.status(404).json({
+        success: false,
+        message: "Case not found",
+      });
+    }
+
+    const timeline = await prisma.caseTimeline.create({
+      data: {
+        caseId,
+        title,
+        description,
+        eventDate: new Date(eventDate),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Timeline event created successfully",
+      timeline,
     });
   } catch (error) {
     return res.status(500).json({
